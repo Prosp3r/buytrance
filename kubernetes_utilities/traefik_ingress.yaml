@@ -1,0 +1,471 @@
+#Service account - provides Traefik with an identity
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik-ingress
+  namespace: kube-system
+
+---
+#Cluster Role - Allow Traefik to watch for and manage resources like Services, Endpoints, Secrets, Ingress across all namespaces in the cluster
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+
+--- 
+#Cluster Role Binding - Binds the Cluster Role with the service account created earlier.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-ingress
+subjects:
+- kind: ServiceAccount
+  name: traefik-ingress
+  namespace: kube-system
+
+---
+# Now Deploy Traefik to the Cluster using Deployments AKA Installation
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: traefik-ingress
+  namespace: kube-system
+  labels:
+    k8s-app: traefik-ingress-lb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
+  template:
+    metadata:
+      labels:
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
+    spec:
+      serviceAccountName: traefik-ingress
+      terminationGracePeriodSeconds: 60
+      containers:
+      - image: traefik:v1.7
+        name: traefik-ingress-lb
+        ports:
+        - name: http
+          containerPort: 80
+        - name: admin
+          containerPort: 8080
+        args:
+        - --api
+        - --kubernetes
+        - --logLevel=INFO
+
+---
+#Service to access traefik from outside the cluster - types NodePort
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-ingress-service
+  namespace: kube-system
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - protocol: TCP
+      port: 80
+      name: web
+    - protocol: TCP
+      port: 8080
+      name: admin
+  type: LoadBalancer
+  #type: NodePort
+
+---
+#Service that exposes traefik web dashboard UI to the external world
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-web-ui
+  namespace: kube-system
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+  - name: web
+    port: 80
+    targetPort: 8080
+
+#---
+#Ingress resource that points visitors to the traefik backend
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: traefik-web-ui
+#  namespace: kube-system
+#spec:
+#  rules:
+#  - host: traefik.buytrance.com
+#    http:
+#      paths:
+      #- path: /traefikdash
+#      - path: /
+#        backend:
+#          serviceName: traefik-web-ui
+#          servicePort: web
+
+---
+####
+#Deployment of homepage app -- front end
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: homepage
+  labels:
+    app: buytrance
+    animal: homepage
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: buytrance
+      task: homepage
+  template:
+    metadata:
+      labels:
+        app: buytrance
+        task: homepage
+        version: v0.0.1
+    spec:
+      containers:
+      - name: homepage
+        image: sirpros/buytrance-holding:v1
+        ports:
+        - containerPort: 80
+---
+#Deployment of oriserver app -- grpc backend
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  #name: homepage
+  name: oriserver
+  labels:
+    app: buytrance
+    animal: oriserver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: buytrance
+      task: oriserver
+  template:
+    metadata:
+      labels:
+        app: buytrance
+        task: oriserver
+    spec:
+      containers:
+      - name: oriserver
+        image: sirpros/oriserver:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+      restartPolicy: Always
+---
+#Deployment of oriclient app -- grpc backend
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  #name: homepage
+  name: oriclient
+  labels:
+    app: buytrance
+    animal: oriclient
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: buytrance
+      task: oriclient
+  template:
+    metadata:
+      labels:
+        app: buytrance
+        task: oriclient
+    spec:
+      containers:
+      - name: oriclient
+        image: sirpros/oriclient:v13
+#        ports:
+#        - containerPort: 8080
+#          protocol: TCP
+      restartPolicy: Always
+#---
+#Deployment of authentication app
+#kind: Deployment
+#apiVersion: apps/v1
+#metadata:
+#  name: authentication
+#  labels:
+#    app: buytrance
+#    animal: authentication
+#spec:
+#  replicas: 2
+#  selector:
+#    matchLabels:
+#      app: buytrance
+#      task: authentication
+#  template:
+#    metadata:
+#      labels:
+#        app: buytrance
+#        task: authentication
+#        version: v0.0.1
+#    spec:
+#      containers:
+#      - name: authentication
+#        image: sirpros/buytrance-holding:v1
+#        ports:
+#        - containerPort: 80
+
+---
+####
+#Services for above deployments to make them visible and accessible.
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: buytrance
+    task: homepage
+---
+# This service is meant to be used by clients of the oriserver. It exposes a ClusterIP that will
+# automatically load balance connections to the different oriserver pods.
+#Services for above deployments to make them visible and accessible.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oriserver
+spec:
+  ports:
+  # The main port, served by gRPC, serves Calculator in grpc cli
+  # traffic and the cli.
+   - port: 8080
+     targetPort: 8080
+     name: grpc
+     protocol: TCP
+# The secondary port serves the REST API endpoints(-TO BE DONE).
+#   - port: 8000
+#     targetPort: 8000
+#     name: http
+#  selector:
+#    app: buytrance
+#    task: oriserver
+---
+# This service is meant to be used to connect to oriclients. It exposes a ClusterIP that will
+# automatically load balance connections to the different oriclients pods.
+#Services for above deployments to make them visible and accessible.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oriclient
+spec:
+  ports:
+  # The main port, served by gRPC, serves Calculator in grpc cli
+  # traffic and the cli.
+   - port: 8080
+     targetPort: 8080
+     name: grpc
+     protocol: TCP
+# The secondary port serves the REST API endpoints(-TO BE DONE).
+#   - port: 8000
+#     targetPort: 8000
+#     name: http
+#  selector:
+#    app: buytrance
+#    task: oriclient
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: authentication
+#  annotations:
+#    traefik.backend.circuitbreaker: "NetworkErrorRatio() > 0.5"
+#spec:
+#  ports:
+#  - name: http
+#    targetPort: 80
+#    port: 80
+#  selector:
+#    app: buytrance
+#    task: authentication
+
+---
+####
+#Additional Ingress resource declarations for apps
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  #name: animals
+  name: buytrance
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: ori.buytrance.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: homepage
+          servicePort: http
+#  - host: buytrance.com
+#    http:
+#      paths:
+#      - path: /login
+#        backend:
+#          serviceName: authentication
+#          servicePort: http
+#  - host: blog.buytrance.com
+#    http:
+#      paths:
+#      - path: /
+#        backend:
+#          serviceName: wordpress
+#          servicePort: http
+#  - host: buytrance.com
+#    http:
+#      paths:
+#      - path: /traefikd
+#        backend:
+#          serviceName: traefik-web-ui
+#          servicePort: web
+#---
+####
+#Additional Ingress resource declarations for apps
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  #name: animals
+#  name: buytrance
+#  annotations:
+#    kubernetes.io/ingress.class: traefik
+#spec:
+#  rules:
+#  - host: dgraph.buytrance.com
+#    http:
+#      paths:
+#      - path: /
+#        backend:
+#          serviceName: dgraph-ratel-public
+#          servicePort: http
+#  - host: alpha.buytrance.com
+#    http:
+#      paths:
+#      - path: /
+#        backend:
+#          serviceName: dgraph-alpha-public
+#          servicePort: http   
+#  - host: zero.buytrance.com
+#    http:
+#      paths:
+#      - path: /
+#        backend:
+#          serviceName: dgraph-zero-public
+#          servicePort: http     
+#--- 
+
+#Ingress resource that points visitors to the traefik backend
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: traefik-web-ui
+#  namespace: kube-system
+#spec:
+#  rules:
+#  - host: traefik.buytrance.com
+#    http:
+#      paths:
+#      #- path: /traefikdash
+#      - path: /
+#        backend:
+#          serviceName: traefik-web-ui
+#          servicePort: web
+#---
+#dgraph-alpha
+#dgraph-zero
+#dgraph-ratel
+#---
+#Single domain ingress config
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: buytrance
+#  annotations:
+#    kubernetes.io/ingress.class: traefik
+#    traefik.frontend.rule.type: PathPrefixStrip
+#spec:
+#  rules:
+#    - host: buytrance.com
+#      http:
+#        paths:
+#        - path: /
+#          backend:
+#            serviceName: homepage
+#            servicePort: http
+#        - path: /dgraph
+#          backend:
+#            serviceName: dgraph-ratel-public
+#            servicePort: ratel-http
+#        - path: /login
+#          backend:
+#            serviceName: homepage
+#            servicePort: http
+#        - path: /auth
+#          backend:
+#            serviceName: authentication
+#            servicePort: http
+#---
+#Single domain ingress config
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: dgraph-ratel
+#  annotations:
+#    kubernetes.io/ingress.class: traefik
+#    traefik.frontend.rule.type: PathPrefixStrip
+#spec:
+#  rules:
+#    - host: straefik.buytrance.com
+#      http:
+#        paths:
+#        - path: /
+#          backend:
+#            serviceName: dgraph-ratel-public
+#            servicePort: ratel-http
+##authentication
