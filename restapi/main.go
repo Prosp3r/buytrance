@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -31,6 +33,12 @@ const (
 var mySigningKey = os.Getenv("BUYTRANCETOKENKEY")
 
 //HB519BUXTICP0QAZEJLT
+
+//SystemMessage -
+type SystemMessage struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
 
 /*
 //User type
@@ -60,6 +68,9 @@ func failOnError(err error, msg string) {
 //var Useracounts = make(map[uint64]string)
 var Useraccounts = make(map[uint64][]map[string]string)
 
+//FiboStore -- Hold fibonacci data
+//var FiboStore = make(map[string]uint64)
+
 //mtxx Mutex lock for protecting read and write operations
 var mtx = &sync.Mutex{}
 
@@ -85,6 +96,7 @@ func preloadUsers() {
 	for _, d := range lines {
 		userID, err := strconv.ParseUint(string(d[0]), 0, 64)
 		failOnError(err, "Failed converting line entry to Uint64")
+		fmt.Printf("UserID : %v \n", userID)
 
 		//
 		userName := string(d[1])
@@ -96,10 +108,18 @@ func preloadUsers() {
 		userPhone := string(d[3])
 		failOnError(err, "Failed to convert line entry to string")
 
+		userConfirmCode := string(d[4])
+		failOnError(err, "Failed to convert line entry to string")
+
+		userCCodeStatus := string(d[5])
+		failOnError(err, "Failed to convert line entry to string")
+
 		userDetail := map[string]string{
-			"Name":  userName,
-			"Email": userEmail,
-			"Phone": userPhone,
+			"Name":        userName,
+			"Email":       userEmail,
+			"Phone":       userPhone,
+			"ConfirmCode": userConfirmCode,
+			"CCodeStatus": userCCodeStatus,
 		}
 
 		//mtx lock for read write concurrency protection
@@ -109,11 +129,77 @@ func preloadUsers() {
 	}
 }
 
+//saveUserData - will save user data to designate storage location currently supports .csv stored on file
+func saveUserData() {
+	fileName := "user.csv"
+	//fmt.Printf("Saving user data state to %v \n", fileName)
+
+	for {
+
+		users := Useraccounts
+		var recordStrings []string
+		var byteStrings []byte
+		for i, v := range users {
+			//fmt.Printf(string(i))
+			userID := i
+			recordstring := strconv.FormatUint(userID, 10) + "," + v[0]["Name"] + "," + v[0]["Email"] + "," + v[0]["Phone"] + "," + v[0]["ConfirmCode"] + "," + v[0]["CCodeStatus"] + "\n"
+			recordStrings = append(recordStrings, recordstring)
+			xbyteStrings := []byte(recordstring)
+
+			byteStrings = append(xbyteStrings, byteStrings...)
+		}
+
+		//fmt.Printf("%v \n %v \n\n", recordStrings, byteStrings)
+		mtx.Lock()
+		openFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0644)
+		failOnError(err, "Failed to open file for saving")
+
+		err = ioutil.WriteFile(fileName, byteStrings, 0644)
+		openFile.Close()
+		mtx.Unlock()
+		time.Sleep(time.Second)
+	}
+}
+
+//maxUserID - will return the highest number of user id in the list.
+func maxUserID() uint64 {
+	var x uint64
+	for i := range Useraccounts {
+		if i > x {
+			x = i
+		}
+	}
+	return x
+}
+
+//addNewUser - adds  a new user to the list
+func addNewUser(userName, userEmail, userPhone string) bool {
+	userConfirmCode := generateCode(6)
+	userCCodeStatus := "active"
+
+	var userID uint64
+	userDetail := map[string]string{
+		"Name":        userName,
+		"Email":       userEmail,
+		"Phone":       userPhone,
+		"ConfirmCode": userConfirmCode,
+		"CCodeStatus": userCCodeStatus,
+	}
+
+	userID = maxUserID() + 1
+	//mtx lock for read write concurrency protection
+	mtx.Lock()
+	Useraccounts[userID] = append(Useraccounts[userID], userDetail)
+	mtx.Unlock()
+	return false
+}
+
 //checkPreviousEmailUse checks submitted email for duplicate returns true if duplicate and false if not
 //params email string
 //return bool
 func checkPreviousEmailUse(email string) bool {
 	//checks
+	//fmt.Println(email)
 	for _, v := range Useraccounts {
 		if email == v[0]["Email"] {
 			//email already in use
@@ -122,6 +208,77 @@ func checkPreviousEmailUse(email string) bool {
 	}
 	//email not in user
 	return false
+}
+
+//checkUsedMail - check if email was already used
+func checkUsedMail(w http.ResponseWriter, r *http.Request) {
+	param := mux.Vars(r)
+	email := param["email"]
+	check := checkPreviousEmailUse(email)
+	//var response []SystemMessage
+	response := SystemMessage{email, strconv.FormatBool(check)}
+
+	//user := []string{"email":email, status: }
+	//json.NewEncoder()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+	return
+	//fmt.Println(w, check)
+}
+
+//checkMail - Checks if email is in use and valid
+func startLogin(w http.ResponseWriter, r *http.Request) {
+
+	//users := Useraccounts
+	//
+	params := mux.Vars(r)
+	//set sent data
+	userEmail := params["email"]
+	if checkPreviousEmailUse(userEmail) == true {
+		//email exists
+		//generate and send confirmation code
+		confirmCode := generateCode(6)
+		//Save code to email profile
+		loginUser := setLoginCode(userEmail, confirmCode)
+		if loginUser == true {
+			//email the code confirmCode to user with email address userEmail
+		}
+		//fmt.Printf("Email: %v - Code: %v \n", userEmail, confirmCode)
+
+	} else {
+		//email does not exist
+		//write to file and send confirmation code
+		userPhone := ""
+		userName := ""
+		addUser := addNewUser(userName, userEmail, userPhone)
+		if addUser == true {
+			//email the code confirmCode to user with email address userEmail
+			//return json response to request
+		}
+		//fmt.Printf("Email: %v - Code: %v \n", userEmail, confirmCode)
+	}
+}
+
+//completeLogin - completes an initiated login process.
+func completeLogin(w http.ResponseWriter, r *http.Request) {
+	param := mux.Vars(r)
+	code := param["confirmcode"]
+	email := param["email"]
+
+	for _, v := range Useraccounts {
+		if v[0]["Email"] == email && v[0]["ConfirmCode"] == code {
+			if v[0]["CCodeStatus"] == "active" {
+				//authorised
+				fmt.Println(w, "Authorised")
+			} else {
+				//not authosrised
+				fmt.Println(w, "Not Authorised")
+			}
+		}
+		//not authorized
+		fmt.Println(w, "Not Authorised")
+	}
+
 }
 
 //generateCode - will generate an alpha numeric string of length len.
@@ -138,6 +295,19 @@ func generateCode(size int) string {
 		r[i] = numbersRunes[rand.Intn(len(numbersRunes))]
 	}
 	return string(r)
+}
+
+//setLoginCode - Sets an active login code for the user
+func setLoginCode(userEmail, confirmCode string) bool {
+
+	for _, v := range Useraccounts {
+		if v[0]["Email"] == userEmail {
+			v[0]["ConfirmCode"] = confirmCode
+			v[0]["CCodeStatus"] = "active"
+			return true
+		}
+	}
+	return false
 }
 
 /*
@@ -232,8 +402,11 @@ func signup(w http.ResponseWriter, r *http.Request) {
 				userName := d[0]["Name"]
 				userEmail := d[0]["Email"]
 				userPhone := d[0]["Phone"]
+				userCreatedDate := d[0]["CreatedDate"]
+				confirmCode := d[0]["ConfirmCode"]
+
 				fmt.Println("Account exists")
-				fmt.Printf("%v %s %s %s \n", userid, userName, userEmail, userPhone)
+				fmt.Printf("%v %s %s %s %s %s \n", userid, userName, userEmail, userPhone, userCreatedDate, confirmCode)
 
 				//[x]->				//send login code via message queue				<-[x]
 			}
@@ -268,6 +441,12 @@ func profile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Profile page reached")
 }
 
+/*
+:::::::::::
+:::::::::::
+:::::::::::
+:::::::::::
+*/
 func main() {
 	//seed random
 	rand.Seed(time.Now().UnixNano())
@@ -275,6 +454,7 @@ func main() {
 	//Preload user data
 	go func() {
 		preloadUsers()
+		saveUserData()
 	}()
 
 	//fmt.Println(Useraccounts)
@@ -283,7 +463,10 @@ func main() {
 	//All crud handlers that will be needed by front ends will be defined and handled here.
 	//User activity
 	router.HandleFunc("/", homepage).Methods("GET")
-	router.HandleFunc("/signup/{email}/{phone}", signup).Methods("GET") //receives user access verification code
+	router.HandleFunc("/login/{email}", startLogin).Methods("GET") //receives user email and send out verification code
+
+	router.HandleFunc("/checkmail/{email}", checkUsedMail).Methods("GET") //receives user email and send out verification code
+	router.HandleFunc("/signup/{email}/{phone}", signup).Methods("GET")   //receives user access verification code
 	router.HandleFunc("/verifycode/{verificationCode}", verifyCode).Methods("POST")
 	//router.HandleFunc("/login", auth).Methods("POST")
 
@@ -308,8 +491,10 @@ func main() {
 	router.HandleFunc("/transaction", getAllTransactions).Methods("GET")
 	router.HandleFunc("transactions/{userId}", getAllUserTransactions).Methods("GET")
 	*/
+	srcx := []byte{'u', 'k', 'w', 'a', 'm', 'e'}
+	fmt.Println(srcx)
 	//start serving handles
-	fmt.Printf("Server running at port %v \n", port)
+	fmt.Printf("Buytrance-Rest API running at port %v \n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
 

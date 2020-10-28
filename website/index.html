@@ -115,7 +115,19 @@
                     <h5 class="modal-title text-center">Login to your account</h5>
                     <!-- p>Log in to your account</p -->
                 </div>
-                <div class="modal-body">
+
+                <!-- VERIFY LOGIN -->
+                  <div class="modal-body verify-login" id="verify-login" style="display:none;">
+                      <div class="form-group" id="createEmaildiv">
+                        <!-- label>Email</label -->
+                      <input type="text" value="" placeholder="Enter verify Code(sent to email)" class="form-control" id="verifyLoginCode" /><br />
+                      <button class="btn btn-block" id="verify-login"> Verify my login</button>
+                      </div>
+                  </div>
+                <!--END VERIFY LOGIN -->
+
+                <!-- LOGIN -->
+                <div class="modal-body create-login">
                     <div class="form-group">
                         <!-- label>Email</label -->
                     <input type="text" value="" placeholder="Email" class="form-control" />
@@ -127,6 +139,8 @@
                   <br />
                     <button class="btn btn-block btn-round"> Login</button>
                 </div>
+                <!-- END LOGIN -->
+
                 <!-- div class="modal-footer no-border-footer">
                     <span class="text-muted  text-center"><strong><a href="recoverpass">Forgot password?</a></strong></span>
                 </div -->
@@ -163,8 +177,17 @@
             
         </div>
           <!-- END PROGRESS BAR -->
+          <div class="modal-body verify-store" id="verify-store" style="display:none;">
+                    <div class="form-group" id="createEmaildiv">
+                      <!-- label>Email</label -->
+                  <input type="text" value="" placeholder="Enter verify Code(sent to email)" class="form-control" id="verifyCode" /><br />
+                  <button class="btn btn-block disabled" id="verify-createsite"> Verify my store</button>
+                </div>
+          </div>
 
-          <div class="modal-body">
+          <div class="modal-body create-store" id="create-store">
+
+
               <div class="form-group" id="createEmaildiv">
                   <!-- label>Email</label -->
               <input type="text" value="" placeholder="Email" class="form-control" id="createEmail" />
@@ -194,7 +217,7 @@
                  <div class="col">
             <!-- div class="form-group free-domain" style="display:;" -->
               <!-- label>Email</label -->
-              <input type="text" value="" placeholder="Shop-Name(one word)" class="form-control sitename small" />
+              <input type="text" value="" id="subDomain" placeholder="Shop-Name(one word)" class="form-control sitename small" />
               </div>
               <div class="col">
                 <br /><b style="vertical-align:bottom;">.buytrance.com</b>
@@ -208,12 +231,12 @@
             <div class="form-group custom-domain" style="display:none;">
 
               <!-- label>Choose your domain name</label -->
-              <input type="text" value="" placeholder="mysitename.com" class="form-control sitename" />
+              <input type="text" value="" disabled id="fullDomain" placeholder="mysitename.com - coming soon...(Charges apply)" class="form-control sitename" />
               
             </div>
             <!-- END PAID DOMAIN -->
             <br />
-            <button class="btn btn-block disabled"> Create my store</button>
+            <button class="btn btn-block" id="ws-createsite"> Create my store</button>
             
           </div>
           <!-- div class="modal-footer no-border-footer">
@@ -484,6 +507,10 @@
       });//end of domain operation
 
 
+      
+
+
+
       //MANAGEMENT WITH SOCKET
      // var userx = {}
       //var wS = new WebSocket("ws://localhost:2000");
@@ -496,6 +523,7 @@
       //Email
       //createEmail = $('#createEmail');
       $('#createEmail').focusout(function(){
+        
           //allswell = false;
         //Fixing entries
         //Check valid email
@@ -509,6 +537,7 @@
 
         //CHECK IF EMAIL HAS BEEN PREVIOUSLY USED ::::::::::::::::::::::::
         email = $('#createEmail').val();
+        //alert("Checking mail...")
         var settings = {
           "url": "http://localhost:2021/checkmail",
           "method": "POST",
@@ -524,13 +553,13 @@
         $.ajax(settings).done(function (response) {
           var info = JSON.parse(response);
           //message = JSON.stringify(info.message);
-          
+          //alert(info);
           if(info.message == "false") {
             UsedAllswell = true;
             msgerror = "";
             }else{
             UsedAllswell = false;
-            msgerror = " "+ $('#createEmail').val() +" is already in use by another account";
+            msgerror = " "+ $('#createEmail').val() +" is already in use, proceed only if its yours";
           }
           
           //:::::::::::::
@@ -558,6 +587,149 @@
             allswell = true;
             error = "";
         } //end check content length*/
+        //CHECK DOMAIN NAME AVAILABILITY
+        //$('#subDomain').change(function(){
+         // $('#subDomain').focusout(function(){
+
+          
+        $('#subDomain').keyup(function(){
+          //check subdomain availability
+          subdomain = $('#subDomain').val();
+          if ((subdomain.length > 2) && (typeof subdomain == "string")){
+              //return false;
+                  var settings = {
+                    //checkSubdomain
+                    "url": "https://localhost:2021/checkdomainname",
+                    "method": "POST",
+                    "timeout": 0,
+                    "headers": {
+                      "Content-Type": "application/json"
+                    },
+                    "data": JSON.stringify({"domain":subdomain}),
+                  };
+    
+                     //AJAX CALL
+                  var UsedAllswell;
+    
+                  $.ajax(settings).done(function (response) {
+                    var info = JSON.parse(response);
+                    //message = JSON.stringify(info.message);
+                    alert(info);
+                    if(info.message == "false") {
+                      UsedAllswell = true;
+                      msgerror = "";
+                      }else{
+                      UsedAllswell = false;
+                      msgerror = subdomain + "is already in use. Choose another domain name for registration.";
+                      //msgerror = " "+ $('#createEmail').val() +" is already in use, proceed only if its yours";
+                      return UsedAllswell;
+                    }
+                  });
+                  
+            
+
+            /*checkDomain = isSubDomain(subdomain);
+            alert(checkDomain)
+            if (checkDomain == true){
+              //alert(true);
+                UsedAllswell = true;
+                //msgerror = "";
+                document.getElementById("ws-response").innerText = "";  
+                }else{
+                  //alert(false);
+                UsedAllswell = false;
+                //msgerror = " "+ $('#subDomain').val() +" Cannot be used at this time";
+                document.getElementById("ws-response").innerText = " The domain name...  " +subdomain+"  ... cannot be used at this time. Choose another";  
+            }*/
+          }
+      });
+
+
+       //VALIDATE SUBDOMAIN
+       function isSubDomain(subdomain) {
+         //return false;
+        if (typeof subdomain == "string"){
+          //return false;
+              return true;
+        }else{
+
+          return false;
+        }
+        //If all fails and no success is registered
+        //return false;
+    }
+
+
+      //CREATE SITE WITH SUBDOMAIN
+        $('#ws-createsite').click(function(){
+          subdomain = $('#subDomain').val();
+          fulldomain = $('#fullDomain').val();
+          domain = stripSpace(subdomain);
+          email = $('#createEmail').val();
+            //alert(subdomain)
+            //Email validation
+              if (isEmail($('#createEmail').val()) == true && isSubDomain(domain) == true) {
+
+                FormatAllswell = true;
+                msgerror = "";
+
+                var settings = {
+                  "url": "http://localhost:2021/createsite",
+                  "method": "POST",
+                  "timeout": 0,
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "data": JSON.stringify({
+                    "email":email,
+                    "domain": domain
+                  }),
+                }
+
+                     //AJAX CALL
+                    var UsedAllswell;
+
+                    $.ajax(settings).done(function (response) {
+                      var info = JSON.parse(response);
+                      //message = JSON.stringify(info.message);
+                      alert(info);
+                      if(info.message == "success") {
+                        UsedAllswell = true;
+                        //msgerror = "";
+                        msqerror = " " + domain + " creation was initiated successfully";
+                        $('#createEmaildiv').addClass("has-success");
+                        document.getElementById("ws-response").innerText = msgerror;
+                            //show verification code screen
+                            $(".verify-store").show(200);
+                            $(".create-store").hide(200);
+                            //alert(domain)
+
+                        }else{
+                        UsedAllswell = false;
+                        //msgerror = " "+ $('#createEmail').val() +" is already in use, proceed only if its yours";
+                        msqerror = " " + domain + "was not created successfully";
+                        $('#createEmaildiv').addClass("has-danger");
+                        document.getElementById("ws-response").innerText = msgerror;
+                      }
+                    });
+
+
+            }else{
+                FormatAllswell = false;
+                msgerror = "A valid email address and domain name is required";
+                $('#createEmaildiv').addClass("has-danger");
+                document.getElementById("ws-response").innerText = msgerror;
+            }//end if valid email address
+            //End Email Validation 
+
+
+           
+
+        
+
+        });
+
+
 
 
       ///CHECK IF EMAIL IS USED
@@ -566,6 +738,7 @@
         
         var settings = {
           "url": "http://localhost:2021/checkmail",
+          //"url": "/checkmail",
           "method": "POST",
           "timeout": 0,
           "headers": {
@@ -573,13 +746,15 @@
           },
           "data": JSON.stringify({"email":email}),
         };
+
         var isUsed = $.ajax(settings).done(function (response) {
-          //console.log(JSON.parse(response));
+          console.log(JSON.parse(response));
           //isUsed = JSON.parse(response);
-          //var info = JSON.parse(response);
+          var info = JSON.parse(response);
           //message = JSON.stringify(info.message);
-          //alert(message);
-          return response
+          //alert(info.message);
+          return info.message
+          //return response
         });
         //console.log(JSON.parse(isUsed));
       }
@@ -588,6 +763,14 @@
       function isEmail(email) {
         var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
         return regex.test(email);
+      }
+
+
+      //REMOVE WHITE SPACE FROM STRING
+      function stripSpace( textString ){
+        const stripped = subdomain.replace(/\s+/g, '')
+        //const stripped = subdomain.replace(/\s+/g, '.')
+        return stripped
       }
     
     
