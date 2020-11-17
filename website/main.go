@@ -15,7 +15,9 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
+	"github.com/gorilla/sessions"
 	"github.com/nats-io/go-nats"
 	_ "gitlab.com/Prosp3r/shopr/domainer/srsbt"
 )
@@ -50,6 +52,9 @@ type Subdomains struct {
 type Searchdomains struct {
 	Domain string `json:"domain"`
 }
+
+//SESSION VARIABLE
+var sessionStore = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
 //SubdomainList -
 var SubdomainList []Subdomains
@@ -93,6 +98,8 @@ func main() {
 	http.HandleFunc("/checkmail", checkMail)
 	http.HandleFunc("/createsite", createSite)
 	http.HandleFunc("/checkdomain", checkSubdomain)
+	http.HandleFunc("/confirmcode", confirmcode)
+	http.HandleFunc("/sites", mysites)
 	//http.HandleFunc("/checkdomainname", checkMail)
 
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
@@ -129,6 +136,128 @@ func features(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "features.html")
 }
 
+//mysites -
+func mysites(w http.ResponseWriter, r *http.Request) {
+
+	//session, _ := sessionStore.Get(r, "session-name")
+
+}
+
+//Check if subdomain is already used
+func checkSubdomain(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("Here here here domain ...")
+	//refresh subdomain list
+	loadSubDomains()
+
+	var subD Searchdomains
+	jsonDcode := json.NewDecoder(r.Body)
+	err := jsonDcode.Decode(&subD)
+	if err != nil {
+		panic(err)
+	}
+	//domain
+	domain := subD.Domain
+	//fmt.Println("The domain detected is: " + domain)
+
+	for _, v := range SubdomainList {
+		if v.Domain == domain {
+			fmt.Println("Used Domain")
+			//domain is already used
+			response := new(SystemMessage)
+			response.Code = domain
+			response.Message = "notavailable"
+
+			//w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(*response)
+			return
+		}
+	}
+
+	//fmt.Println("Unused Domain")
+	//domain is not yet used
+	/*response := SystemMessage{
+		Code:    domain,
+		Message: "available",
+	}*/
+	var systemMessage = new(SystemMessage)
+	systemMessage.Code = domain
+	systemMessage.Message = "available"
+
+	//fmt.Println(response)
+	//w.Header().Set("Content-Type", "application/json")
+	fmt.Println(*systemMessage)
+	json.NewEncoder(w).Encode(*systemMessage)
+	return
+}
+
+/*
+:::::::::::::::::::::::::LOGIN AUTHENTICAITON :::::::::::::::::::
+*/
+func login(w http.ResponseWriter, r *http.Request) {
+	session, _ := sessionStore.Get(r, "cookie-name")
+
+	//set some session values
+	session.Values["authenticated"] = true
+	session.Values["userid"] = 0
+	session.Values["logintime"] = time.Now()
+
+	//SAVE SESSION
+	err := session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+//confirmcode
+func confirmcode(w http.ResponseWriter, r *http.Request) {
+
+	type Verifier struct {
+		Code   string
+		Domain string
+		Email  string
+	}
+
+	var verifi Verifier
+	jsonDcode := json.NewDecoder(r.Body)
+	err := jsonDcode.Decode(&verifi)
+	if err != nil {
+		panic(err)
+	}
+
+	//CALL TO USER / AUTH SERVICE
+	resp, err := http.Get("http://localhost:1980/verifycode/" + verifi.Code + "/" + verifi.Email)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var systemMessage SystemMessage
+	//fmt.Printf("ResulDecode: %v \n", resp.Body)
+	resultDcode := json.NewDecoder(resp.Body)
+	err = resultDcode.Decode(&systemMessage)
+	if err != nil {
+		panic(err)
+	}
+	//Received code sresponse
+	verified := systemMessage.Code
+
+	if verified == "true" {
+		//code is verified.
+		//Authenticated
+		session, _ := sessionStore.Get(r, "cookie-name")
+		session.Values["authenticated"] = true
+		session.Values["email"] = true
+		//Save session information
+		session.Save(r, w)
+
+		fmt.Println(session)
+		//if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		//	http.Error(w, "Forbidden", http.StatusForbidden)
+		//	return
+		//}
+	}
+}
+
 //checkMail - will take the parameters received from the front end and communicate with the user service to check for email availability
 func checkMail(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println("here here mail...")
@@ -153,49 +282,14 @@ func checkMail(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(systemMessage)
 	json.NewEncoder(w).Encode(systemMessage)
 	return
 }
 
-//Check if subdomain is already used
-func checkSubdomain(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Here here here domain ...")
-	//refresh subdomain list
-	loadSubDomains()
-
-	/*var subD Searchdomains
-	jsonDcode := json.NewDecoder(r.Body)
-	err := jsonDcode.Decode(&subD)
-	if err != nil {
-		panic(err)
-	}
-	//domain
-	domain := subD.Domain
-	fmt.Println(domain)
-
-	for _, v := range SubdomainList {
-		if v.Domain == domain {
-			fmt.Println("Used Domain")
-			//domain is already used
-			response := SystemMessage{
-				Code:    domain,
-				Message: "notavailable",
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-	}
-
-	//domain is not yet used
-	response := SystemMessage{
-		Code:    domain,
-		Message: "available",
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-	return*/
-}
+/*
+:::::::::::::::::::::::::END LOGIN AUTHENTICAITON :::::::::::::::::::
+*/
 
 //createSite
 func createSite(w http.ResponseWriter, r *http.Request) {
@@ -234,13 +328,12 @@ func createSite(w http.ResponseWriter, r *http.Request) {
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
-	response := SystemMessage{
-		site.Domain,
-		"sent",
-	}
+	response := new(SystemMessage)
+	response.Code = site.Domain
+	response.Message = "success"
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	//w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(*response)
 	return
 }
 
@@ -272,7 +365,7 @@ func loadSubDomains() {
 		fmt.Println(d)
 		domainID, err := strconv.ParseUint(string(d[0]), 0, 64)
 		failOnError(err, "Failed converting line entry to Uint64")
-		fmt.Printf("domainID : %v \n", domainID)
+		//fmt.Printf("domainID : %v \n", domainID)
 
 		userEmail := string(d[1])
 		failOnError(err, "Failed to convert line entry to string")

@@ -180,8 +180,11 @@
           <div class="modal-body verify-store" id="verify-store" style="display:none;">
                     <div class="form-group" id="createEmaildiv">
                       <!-- label>Email</label -->
-                  <input type="text" value="" placeholder="Enter verify Code(sent to email)" class="form-control" id="verifyCode" /><br />
-                  <button class="btn btn-block disabled" id="verify-createsite"> Verify my store</button>
+                  <input type="text" value="" placeholder="Enter verify Code(sent to email)" class="form-control" id="verifySiteCode" /><br />
+                  <input type="hidden" id="verifySiteID" value="" />
+                  <input type="hidden" id="verifySiteDomain" value="" />
+                  <input type="hidden" id="verifySiteEmail" value="" />
+                  <button class="btn btn-block " id="verify-createsite"> Verify my store</button>
                 </div>
           </div>
 
@@ -223,7 +226,7 @@
                 <br /><b style="vertical-align:bottom;">.buytrance.com</b>
               </div>
               <br /><br />
-              <div class="form-control-feedback text-warning" id="ws-response">&nbsp;shopname.buytrance.com is <b>taken. Try another</b></div>
+              <div class="form-control-feedback text-warning" id="ws-response"></div>
             </div>
             <!-- END FREE DOMAIN -->
 
@@ -537,7 +540,7 @@
 
         //CHECK IF EMAIL HAS BEEN PREVIOUSLY USED ::::::::::::::::::::::::
         email = $('#createEmail').val();
-        //alert("Checking mail...")
+        //alert("Checking mail...") 
         var settings = {
           "url": "http://localhost:2021/checkmail",
           "method": "POST",
@@ -553,7 +556,7 @@
         $.ajax(settings).done(function (response) {
           var info = JSON.parse(response);
           //message = JSON.stringify(info.message);
-          //alert(info);
+          //alert(info.message);
           if(info.message == "false") {
             UsedAllswell = true;
             msgerror = "";
@@ -567,12 +570,14 @@
           if (UsedAllswell == false || FormatAllswell == false){
               $('#createEmaildiv').addClass("has-danger");
               document.getElementById("ws-response").innerText = msgerror; //"error invalid email";
+              //$('#ws-createsite').prop('disabled', true);
           }else{
               $('#createEmaildiv').removeClass("has-danger");
               $('#createEmaildiv').addClass("has-success");
               //$('ws-response').innerText = msgerror;
               //document.getElementById("ws-response").innerText(msgerror);
-              document.getElementById("ws-response").innerText = "...";      
+              document.getElementById("ws-response").innerText = "...";
+              //$('#ws-createsite').prop('disabled', false);
           } //createEmail
 
         });
@@ -591,59 +596,69 @@
         //$('#subDomain').change(function(){
          // $('#subDomain').focusout(function(){
 
-          
+        //var waittime = 0;
         $('#subDomain').keyup(function(){
-          //check subdomain availability
+          
           subdomain = $('#subDomain').val();
-          if ((subdomain.length > 2) && (typeof subdomain == "string")){
-              //return false;
-                  var settings = {
-                    //checkSubdomain
-                    "url": "https://localhost:2021/checkdomainname",
-                    "method": "POST",
-                    "timeout": 0,
-                    "headers": {
-                      "Content-Type": "application/json"
-                    },
-                    "data": JSON.stringify({"domain":subdomain}),
-                  };
-    
-                     //AJAX CALL
-                  var UsedAllswell;
-    
-                  $.ajax(settings).done(function (response) {
-                    var info = JSON.parse(response);
-                    //message = JSON.stringify(info.message);
-                    alert(info);
-                    if(info.message == "false") {
-                      UsedAllswell = true;
-                      msgerror = "";
-                      }else{
-                      UsedAllswell = false;
-                      msgerror = subdomain + "is already in use. Choose another domain name for registration.";
-                      //msgerror = " "+ $('#createEmail').val() +" is already in use, proceed only if its yours";
-                      return UsedAllswell;
-                    }
-                  });
-                  
-            
+                    
+          /*
+              var i = 1;
+              $("#startButton").click(function (e) {
+                  setInterval(function () {
+                      $("#stopWatch").html(i);
+                      i++;
+                  }, 1000);
+              });
+                
+              $("#resetButton").click(function (e) {
+                  i = 0;
+              });
+          */
+          /*var oldDate = new Date;
+            setInterval(function(){
+                interval = (new Date - oldDate) / 1000;
+              }, 1000);*/
+          //if(waittime >= 1)
+          
+          if(subdomain.length > 2){
+              //alert(subdomain);
+              var settings = {
+                "url": "http://localhost:2021/checkdomain",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "data": JSON.stringify({"domain": subdomain }),
+              };
+              //AJAX CALL
+              var UsedAllswell;
+      
+              $.ajax(settings).done(function (response) {
+                var info = JSON.parse(response);
+                //message = JSON.stringify(info.message);
+                //alert(info.message);
+                if(info.message == "available") {
+                  UsedAllswell = true;
+                  msgerror = "Your chosen domain name - " + subdomain + " - is available.";
 
-            /*checkDomain = isSubDomain(subdomain);
-            alert(checkDomain)
-            if (checkDomain == true){
-              //alert(true);
-                UsedAllswell = true;
-                //msgerror = "";
-                document.getElementById("ws-response").innerText = "";  
-                }else{
-                  //alert(false);
-                UsedAllswell = false;
-                //msgerror = " "+ $('#subDomain').val() +" Cannot be used at this time";
-                document.getElementById("ws-response").innerText = " The domain name...  " +subdomain+"  ... cannot be used at this time. Choose another";  
-            }*/
+                  $('#createEmaildiv').removeClass("has-danger");
+                  $('#createEmaildiv').addClass("has-success");
+                  document.getElementById("ws-response").innerText = msgerror;// "...";  
+                  $('#ws-createsite').prop('disabled', false);
+
+                  }else{
+                  UsedAllswell = false;
+                  msgerror = subdomain + " - is already in use. \nChoose another domain name for registration.";
+                  $('#createEmaildiv').addClass("has-danger");
+                  document.getElementById("ws-response").innerText = msgerror; //"error invalid email";
+                  //disable create button
+                  $('#ws-createsite').prop('disabled', true);
+                }
+
+              });
           }
-      });
-
+    });
 
        //VALIDATE SUBDOMAIN
        function isSubDomain(subdomain) {
@@ -658,6 +673,62 @@
         //If all fails and no success is registered
         //return false;
     }
+        //ENABLE OR DISSABLE SITE CREATION CONFRIM BUTTON BASED ON MET CRIETERIA - XTERCOUNT
+        $('#verifySiteCode').keyup(function(){
+            verifyCode = $('#verifySiteCode').val();
+            if (verifyCode.length > 5){
+              //make submit button clickable
+              $('#verify-createsite').prop('disabled', false);
+            }else{
+              $('#verify-createsite').prop('disabled', true);
+            }
+        });
+
+
+
+
+
+
+        //CAPTURE CLICK EVENT ON CONFIRM SITE BUTTON
+        $('#verify-createsite').click(function(){
+            verifyCode = $('#verifySiteCode').val();
+            verifyEmail = $('#verifySiteEmail').val();
+            verifyDomain = $('#verifySiteDomain').val();
+            var settings = {
+              "url": "http://localhost:2021/confirmcode",
+              "method": "POST",
+              "timeout": 0,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "data": JSON.stringify({
+                "confirmcode": verifyCode,
+                "domain": verifyDomain,
+                "email": verifyEmail
+              }),
+            }
+
+            $.ajax(settings).done(function(response){
+              var info = JSON.parse(response);
+              //check response message
+              if(info.message == "success"){
+                UsedAllswell = true;
+
+                //start session, cookie and move to user's site list pages
+                //START SESSIONS & COOKIE AND MOVE/REDIRECT TO USER'S SITE LIST PAGES.
+                jwtoken = info.code;
+                message = info.message;
+
+                localStorage.setItem('token', jwtoken);
+                
+
+              }
+
+            });
+
+        });
+
+
 
 
       //CREATE SITE WITH SUBDOMAIN
@@ -666,7 +737,6 @@
           fulldomain = $('#fullDomain').val();
           domain = stripSpace(subdomain);
           email = $('#createEmail').val();
-            //alert(subdomain)
             //Email validation
               if (isEmail($('#createEmail').val()) == true && isSubDomain(domain) == true) {
 
@@ -692,24 +762,22 @@
                     $.ajax(settings).done(function (response) {
                       var info = JSON.parse(response);
                       //message = JSON.stringify(info.message);
-                      alert(info);
+                      //alert(info.message);
                       if(info.message == "success") {
                         UsedAllswell = true;
-                        //msgerror = "";
-                        msqerror = " " + domain + " creation was initiated successfully";
-                        $('#createEmaildiv').addClass("has-success");
-                        document.getElementById("ws-response").innerText = msgerror;
-                            //show verification code screen
-                            $(".verify-store").show(200);
-                            $(".create-store").hide(200);
-                            //alert(domain)
+                        //$('#verifyID').val();
+                        msqerror = " " + domain + "\n Creation was initiated successfully";
+                        $('#verify-store').show(200);
+                        $('#create-store').hide(200);
+                        //TEmporarily use the code as token
+                        //$('#verifySiteCode').val(info.code);
+                        $('#verifySiteEmail').val(email);
+                        $('#verifySiteDomain').val(info.code);
 
                         }else{
+
                         UsedAllswell = false;
-                        //msgerror = " "+ $('#createEmail').val() +" is already in use, proceed only if its yours";
-                        msqerror = " " + domain + "was not created successfully";
-                        $('#createEmaildiv').addClass("has-danger");
-                        document.getElementById("ws-response").innerText = msgerror;
+                        msqerror = " Your domain was not created successfully \n Reason: " + info.message ;
                       }
                     });
 
@@ -721,12 +789,6 @@
                 document.getElementById("ws-response").innerText = msgerror;
             }//end if valid email address
             //End Email Validation 
-
-
-           
-
-        
-
         });
 
 
