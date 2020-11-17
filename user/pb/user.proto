@@ -1,0 +1,97 @@
+//This Protobuf structure will be used for User, Contacts and Authentication Managment
+syntax = "proto3";
+package user;
+
+import "google/protobuf/timestamp.proto";
+
+//void - a blank parameter for empty parameter entry purpose only
+message Emptyentry {
+    //google.protobuf.empty empty = 1;
+    //https://stackoverflow.com/questions/50993815/is-google-protobuf-empty-dangerous-for-backwards-compatibility
+} 
+
+message IDString{
+    string info = 1;
+}
+
+message BOOLValue{
+    bool info = 1;
+}
+
+//User - models user account information
+message User {
+    string uuid = 1;
+    string username  = 2;
+    string email = 3;
+    string accountstatus = 4;
+    string verificationcode = 5;
+    string codestatus = 6;
+    google.protobuf.Timestamp datejoined = 8;
+    google.protobuf.Timestamp lastupdated = 9;
+}
+
+message UserResponse {
+    User user = 1;
+}
+
+//Users - with an (s)plural structure will take a list/array of user profiles.
+message Users {
+    repeated User users = 1;
+}
+
+
+//create services
+service USERService {
+    rpc AddUser(User)returns(UserResponse){}
+    rpc GetUser(IDString)returns(UserResponse){}
+    rpc GetUsers(Emptyentry)returns(Users){}
+    rpc UdateUser(User)returns(UserResponse){}
+    rpc DeactivateUser(User)returns(BOOLValue){}
+}
+
+
+/*/PhoneType - phone use types
+enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+}
+
+//
+message PhoneNumber {
+    string phoneuid = 1;
+    string number = 2;
+    PhoneType type = 3;
+}
+
+//
+message Contact {
+    string contactuid = 1;
+    string firstname = 2;
+    string lastname = 3;
+    string email = 4;
+    repeated PhoneNumber phones = 5;
+    string address1 = 6;
+    string address2 = 7;
+    string state = 8;
+    string country = 9;
+    string zip = 10;
+}
+
+message Contactsbook {
+    //Owner-unique-id is needed because contacts should not be easily attributed to or("following ->") just any user for privacy reasons.
+    string contactbookid = 1;
+    string owneruuid = 2;
+    repeated Contact contacts = 3;
+}
+
+
+//CONTACTService - 
+service CONTACTService {
+    rpc AddContact(Contact)returns(Contact){}
+    rpc AddContactsbook(Contactsbook)returns(Contactsbook){}
+    rpc GetContact(IDString)returns(Contact){}
+    rpc GetContactsbook(IDString)returns(Contactsbook){}
+    rpc UpdateContact(Contact)returns(Contact){}
+    rpc DeleteContact(Contact)returns(BOOLValue){}
+}*/
