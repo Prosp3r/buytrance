@@ -1,4 +1,4 @@
-package main
+/*package main
 
 import (
 	"bufio"
@@ -148,9 +148,9 @@ func saveToDGraph(c *dgo.Dgraph) {
 	joindate := time.Date(1980, 01, 01, 23, 0, 0, 0, time.UTC) //if needed
 
 	var user = new(User)
-	user.UserID = 
-	
-	
+	user.UserID =
+
+
 	//:::::::::::::::::::
 	//END DGRAPH HANDLER
 }
@@ -366,7 +366,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	failOnError(err, "Unauthorized")
 
 	json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
-}*/
+}* /
 
 func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -464,7 +464,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	//- head to confirmation endpoint page
 }
 
-/*/accept verification code sent to email address
+/* /accept verification code sent to email address
 func verifyCode(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Verify page reached")
 
@@ -472,7 +472,7 @@ func verifyCode(w http.ResponseWriter, r *http.Request) {
 	//retreive request parameters
 	code := info["code"]
 	fmt.Printf("Received : %v \n", code)
-}*/
+}* /
 
 func homepage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to home page")
@@ -487,7 +487,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 :::::::::::
 :::::::::::
 :::::::::::
-*/
+* /
 func main() {
 	//seed random
 	rand.Seed(time.Now().UnixNano())
@@ -531,7 +531,7 @@ func main() {
 	//User transactions
 	router.HandleFunc("/transaction", getAllTransactions).Methods("GET")
 	router.HandleFunc("transactions/{userId}", getAllUserTransactions).Methods("GET")
-	*/
+	* /
 	srcx := []byte{'u', 'k', 'w', 'a', 'm', 'e'}
 	fmt.Println(srcx)
 	//start serving handles

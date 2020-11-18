@@ -1,7 +1,11 @@
 package main
 
-import (
-	"github.com/Prosp3r/buytrance/user/pb"
-)
+//User - holds data structure for user type
+type User struct {
+}
 
+//
+func main() {
+
+}
 
