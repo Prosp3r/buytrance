@@ -3,6 +3,7 @@ module gitlab.com/Prosp3r/buytrance/restapi
 go 1.14
 
 require (
+	github.com/Prosp3r/buytrance/user/pb v0.0.0-20201119105859-c00fe1f094db // indirect
 	github.com/ThreeDotsLabs/watermill v1.1.1 // indirect
 	github.com/badoux/checkmail v1.2.1 // indirect
 	github.com/dgraph-io/dgo/v200 v200.0.0-20201023081658-a9ad93fe6ebd // indirect
