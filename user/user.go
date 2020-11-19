@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on port %v with error: %v \n", port, err)
 	}
-	fmt.Printf("OriCalc Server started on port %v \n", port)
+	fmt.Printf("BTUser Server started on port %v \n", port)
 
 	s := grpc.NewServer()
 	btuser.RegisterUSERServiceServer(s, &user{})

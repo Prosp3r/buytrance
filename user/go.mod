@@ -8,6 +8,7 @@ require (
 	github.com/badoux/checkmail v1.2.1 // indirect
 	github.com/dgraph-io/dgo/v200 v200.0.0-20201023081658-a9ad93fe6ebd // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/fullstorydev/grpcurl v1.7.0 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/nats-io/stan.go v0.7.0 // indirect
