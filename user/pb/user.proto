@@ -45,7 +45,7 @@ service USERService {
     rpc AddUser(User)returns(UserResponse){}
     rpc GetUser(IDString)returns(UserResponse){}
     rpc GetUsers(Emptyentry)returns(Users){}
-    rpc UdateUser(User)returns(UserResponse){}
+    rpc UpdateUser(User)returns(UserResponse){}
     rpc DeactivateUser(User)returns(BOOLValue){}
 }
 
