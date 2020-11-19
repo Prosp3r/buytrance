@@ -12,8 +12,7 @@ import (
 )
 
 //User - holds data structure for user type
-type user struct {
-}
+type user struct{}
 
 //
 func main() {
