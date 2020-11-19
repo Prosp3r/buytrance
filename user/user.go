@@ -42,12 +42,6 @@ func (c *user) AddUser(ctx context.Context, r *bt.User) (*bt.UserResponse, error
 	return response, nil
 }
 
-//DeactivateUser - Will flag a user's profile/account deactivated
-func (c *user) DeactivateUser(ctx context.Context, r *bt.User) (*bt.BOOLValue, error) {
-	var response *bt.BOOLValue
-	return response, nil
-}
-
 //GetUser - will return user's detailed information
 func (c *user) GetUser(ctx context.Context, r *bt.IDString) (*bt.UserResponse, error) {
 	var response *bt.UserResponse
@@ -63,6 +57,12 @@ func (c *user) GetUsers(ctx context.Context, r *bt.Emptyentry) (*bt.Users, error
 //UpdateUser - will update a user's information
 func (c *user) UpdateUser(ctx context.Context, r *bt.User) (*bt.UserResponse, error) {
 	var response *bt.UserResponse
+	return response, nil
+}
+
+//DeactivateUser - Will flag a user's profile/account deactivated
+func (c *user) DeactivateUser(ctx context.Context, r *bt.User) (*bt.BOOLValue, error) {
+	var response *bt.BOOLValue
 	return response, nil
 }
 
