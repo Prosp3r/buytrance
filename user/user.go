@@ -65,11 +65,3 @@ func (c *user) DeactivateUser(ctx context.Context, r *bt.User) (*bt.BOOLValue, e
 	var response *bt.BOOLValue
 	return response, nil
 }
-
-/*
-rpc AddUser(User)returns(UserResponse){}
-    rpc GetUser(IDString)returns(UserResponse){}
-    rpc GetUsers(Emptyentry)returns(Users){}
-    rpc UdateUser(User)returns(UserResponse){}
-    rpc DeactivateUser(User)returns(BOOLValue){}
-*/
