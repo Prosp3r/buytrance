@@ -65,3 +65,10 @@ func (c *user) DeactivateUser(ctx context.Context, r *bt.User) (*bt.BOOLValue, e
 	var response *bt.BOOLValue
 	return response, nil
 }
+
+//UpdateUser - will update a user's information
+//This is a temporary fix for cache issues resulting from typo in method name UpdateUser in proto file
+func (c *user) UdateUser(ctx context.Context, r *bt.User) (*bt.UserResponse, error) {
+	var response *bt.UserResponse
+	return response, nil
+}
