@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	btuser "github.com/Prosp3r/buytrance/user/pb"
 	"github.com/golang/protobuf/ptypes"
 )
 
@@ -39,12 +38,14 @@ func TestAddUser(m *testing.T) {
 	}
 
 	//st := &timestamp.Timestamp{tstamp, }
-	p := []*btuser.User{
+	/*p := []*btuser.User{
 		{"", "Prosper", "prosper@email.com", "inactive", "1v0", "pending", ut, ut}
-	}
+	}*/
+	got := ut
+	exp := ut
 
-	if !equal(got, exp) {
-		t.Fatalf("Test AddUser Test expected: %v \n Got: %v \n", exp, got )
+	if got != exp {
+		fmt.Printf("Test AddUser Test expected: %+v \n Got: %+v \n", exp, got)
 	}
 	//in := []user{"", "name1", "user1@fakemail.com", "unverified", "0v1", "pending", timenow, timenow}
 
