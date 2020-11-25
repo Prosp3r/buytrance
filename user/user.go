@@ -13,6 +13,17 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+/*/User type
+type Usertype struct {
+	UserUID    string `json:"useruid,omitempty"`
+	Fullname   string `json:"fullname,omitempty"`
+	Email      string `json:"email,omitempty"`
+	Phone      string `json:"phone,omitempty"`
+	Datejoin   string `json:"lastlogin,omitempty"`
+	Verifycode string `json:"verifycode,omitempty"`
+	Status     string `json:"status,omitempty"`
+}*/
+
 //User - holds data structure for user type
 type user struct{}
 
@@ -65,24 +76,35 @@ func Infopage(w http.ResponseWriter, r *http.Request) {
 }
 
 //AddUser - Method will add a new user to the system
+//Return - string UniqueUserID
 func (c *user) AddUser(ctx context.Context, r *btuser.User) (*btuser.UserResponse, error) {
 
 	var response *btuser.UserResponse
 	//check if user exists
+	userEmail := response.User.Email
+	if IsUserSignedUp(userEmail) == false {
+		//User is already in the system
+		//response.User, err = AddUserToDGraph(r)
+		adduser, err := AddUserToDGraph(r)
+		if err != nil {
+			log.Fatalf("Failed adding new user with error: \n %+v \n", err)
+			return nil, err
+		}
+	}
+
 	//store in database if not
 	//If already exists, return user information and send alert code to email or phone number on file for login
-	response.User = r
+	response.User = adduser //temporary assignment this will change
 
 	return response, nil
 }
 
 //AddUser - for Handling JSON API Requests mapped to AddUser gRPC method
-//param - http.Request with JSON Payload
+//param - http.Request with JSON Payload [{username, email, phone, }]
 //returns json response http response writer
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	//set status
 	//w.WriteHeader(http.StatusOK)
-	
 }
 
 //GetUser - will return user's detailed information

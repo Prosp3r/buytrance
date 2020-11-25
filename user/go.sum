@@ -94,6 +94,7 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/devigned/tab v0.1.1/go.mod h1:XG9mPq0dFghrYvoBF3xdRrJzSTX1b7IQrvaL9mzjeJY=
 github.com/dgraph-io/dgo v1.0.0 h1:DRuI66G+j0XWDOXly4v5PSk2dGkbIopAZIirRjq7lzI=
+github.com/dgraph-io/dgo v1.0.0/go.mod h1:6K5zUB6Lsml4SEStX+fPzGhJtCLX9XxbkHJLsGOXS1E=
 github.com/dgraph-io/dgo/v200 v200.0.0-20201023081658-a9ad93fe6ebd h1:K91bxJPUvvJJUVdZIUl3t5wKgEMYqkdNbn5lTP3RzFY=
 github.com/dgraph-io/dgo/v200 v200.0.0-20201023081658-a9ad93fe6ebd/go.mod h1:Co+FwJrnndSrPORO8Gdn20dR7FPTfmXr0W/su0Ve/Ig=
 github.com/dgrijalva/jwt-go v1.0.2 h1:KPldsxuKGsS2FPWsNeg9ZO18aCrGKujPoWXn2yo+KQM=
