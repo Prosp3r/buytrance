@@ -70,6 +70,7 @@ func startJSONAPI(port string) {
 
 }
 
+//Infopage - Displays welcome information about the API to users
 func Infopage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Hi, you've reached the User service page \n\n This service helps manage users of the app \n\n  The following end points require JSON Payloads \n /adduser to add a new user to the system \n /getuser to fetch a single user's information \n /getusers with an s to fetch all user's information in a list \n /updateUser to update a user's information \n /deactivateuser (administrative) to flag a user's profile as inactive \n ")
@@ -81,22 +82,25 @@ func (c *user) AddUser(ctx context.Context, r *btuser.User) (*btuser.UserRespons
 
 	var response *btuser.UserResponse
 	//check if user exists
-	userEmail := response.User.Email
+	userEmail := r.Email
 	if IsUserSignedUp(userEmail) == false {
 		//User is already in the system
 		//response.User, err = AddUserToDGraph(r)
+
 		adduser, err := AddUserToDGraph(r)
 		if err != nil {
 			log.Fatalf("Failed adding new user with error: \n %+v \n", err)
 			return nil, err
 		}
+		response.User = adduser
+		return response, nil
 	}
 
 	//store in database if not
 	//If already exists, return user information and send alert code to email or phone number on file for login
-	response.User = adduser //temporary assignment this will change
+	//response.User = adduser //temporary assignment this will change
 
-	return response, nil
+	//return response, nil
 }
 
 //AddUser - for Handling JSON API Requests mapped to AddUser gRPC method

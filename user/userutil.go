@@ -32,7 +32,7 @@ type User struct {
 
 //AddUserToDGraph - adds a new user node to the DGraph database
 //Takes in a variable *btuser.User struct and returns *api.Response or error
-func AddUserToDGraph(userInfoJSON *btuser.User) (*api.Response, error) {
+func AddUserToDGraph(userInfoJSON *btuser.User) (*btuser.User, error) {
 	dgraph := DgraphCONN()
 	op := &api.Operation{}
 	op.Schema = `
@@ -71,9 +71,33 @@ func AddUserToDGraph(userInfoJSON *btuser.User) (*api.Response, error) {
 	mu.SetJson = pb
 	assigned, err := dgraph.NewTxn().Mutate(ctx, mu)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed with error: \n %+v \n", err)
 	}
-	return assigned, nil
+
+	variables := map[string]string{"$email": assigned.Uids[userInfoJSON.Email]}
+	query := `query me($email: string){
+		me(func: email($email)){
+			uid
+			username
+			email
+			accountstatus
+			verificationcode
+			codestatus
+			datejoin
+			lastupdated
+		}
+	}`
+	resp, err := dgraph.NewTxn().QueryWithVars(ctx, query, variables)
+	if err != nil {
+		log.Fatalf("Failed with error: \n %+v \n", err)
+	}
+	var person *btuser.User
+	err = json.Unmarshal(resp.Json, &person)
+	if err != nil {
+		log.Fatalf("Failed with error : \n %v \n", err)
+	}
+
+	return person, nil
 }
 
 //GetUserFromDGraph - Returns User
