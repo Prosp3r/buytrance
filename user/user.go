@@ -14,12 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-
-	"github.com/dgraph-io/dgo/protos/api"
-	"github.com/dgraph-io/dgo/v200"
+	"github.com/dgraph-io/dgo"
 )
-
-
 
 var dgServer = "localhost:9080"
 
@@ -27,7 +23,7 @@ var dgServer = "localhost:9080"
 func DgraphCONN() *dgo.Dgraph {
 	conn, err := grpc.Dial(dgServer, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("Could not connect to DGraph gRPC")
+		log.Fatalf("Could not connect to DGraph gRPC: \n %+v \n", err)
 	}
 	defer conn.Close()
 	dc := api.NewDgraphClient(conn)
@@ -52,8 +48,8 @@ type user struct{}
 
 //
 func main() {
-	grpcport := ":8080"
-	httpport := ":8081"
+	grpcport := ":8090"
+	httpport := ":8091"
 
 	go func() {
 		startJSONAPI(httpport)
